@@ -67,7 +67,7 @@ public class StockListFragment extends Fragment{
 
     private void clickOptionItemUpdateAllStock(MenuItem item){
         FetchStockDataTask fetchStockDataTask = new FetchStockDataTask(getActivity(), stocklisteAdapter);
-        fetchStockDataTask.execute("Fetch Stock");
+        fetchStockDataTask.execute("BMW.de", "DAI.de", "ALV.de", "OSR.de");
         Toast.makeText(getActivity(), "Aktiendaten werden abgefragt!", Toast.LENGTH_LONG).show();
     }
 

@@ -6,6 +6,34 @@ import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.StringReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
 /**
  * Created by wei on 05.11.17.
  */
@@ -24,28 +52,41 @@ public class FetchStockDataTask extends AsyncTask<String, Integer, String[]> {
     @Override
     protected String[] doInBackground(String... strings) {
 
-        String[] ergebnisArray = new String[20];
-
-        for (int i=0; i < 20; i++) {
-
-            // Den StringArray füllen wir mit Beispieldaten
-            ergebnisArray[i] = strings[0] + "_" + (i+1);
-
-            // Alle 5 Elemente geben wir den aktuellen Fortschritt bekannt
-            if (i%5 == 4) {
-                publishProgress(i+1, 20);
-            }
-
-            // Mit Thread.sleep(600) simulieren wir eine Wartezeit von 600 ms
-            try {
-                Thread.sleep(600);
-            }
-            catch (Exception e) { Log.e(LOG_TAG, "Error ", e); }
+        if (strings.length == 0) { // Keine Eingangsparameter erhalten, daher Abbruch
+            return null;
         }
 
-        return ergebnisArray;
-    }
+        //Key: NHJJ0QINWJPKL86V https://www.alphavantage.co
 
+        List<String> stockDatas = new ArrayList<>();
+        int index = 1;
+        for(String stockSymbol: strings){
+            String stockData = readStockDataHttps(stockSymbol);
+            stockDatas.add(stockData);
+
+            Log.v(LOG_TAG,"Stock Data:(" + stockSymbol + "):" + stockData);
+
+            publishProgress(index++, strings.length);
+        }
+
+        String [] stockArray = {
+                "Adidas - Kurs: 73,45 €",
+                "Allianz - Kurs: 145,12 €",
+                "BASF - Kurs: 84,27 €",
+                "Bayer - Kurs: 128,60 €",
+                "Beiersdorf - Kurs: 80,55 €",
+                "BMW St. - Kurs: 104,11 €",
+                "Commerzbank - Kurs: 12,47 €",
+                "Continental - Kurs: 209,94 €",
+                "Continental - Kurs: 209,94 €",
+                "Continental - Kurs: 209,94 €",
+                "Daimler - Kurs: 84,33 €"
+        };
+        if(stockDatas.isEmpty()){
+            stockDatas.addAll(Arrays.asList(stockArray));
+        }
+        return stockDatas.toArray(new String[stockDatas.size()]);
+    }
     @Override
     protected void onProgressUpdate(Integer... values) {
 
@@ -81,5 +122,133 @@ public class FetchStockDataTask extends AsyncTask<String, Integer, String[]> {
     public ArrayAdapter<String> getStocklisteAdapter() {
         return stocklisteAdapter;
     }
+
+    private String readStockDataHttps(String stockSymbol){
+
+        HttpsURLConnection httpsURLConnection = null;
+
+        BufferedReader bufferedReader = null;
+
+        String aktiendatenXmlString = "";
+
+        try {
+
+            // Create a trust manager that does not validate certificate chains
+            TrustManager[] trustAllCerts = new TrustManager[]{
+                    new X509TrustManager() {
+                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                            return null;
+                        }
+                        public void checkClientTrusted(
+                                java.security.cert.X509Certificate[] certs, String authType) {
+                        }
+                        public void checkServerTrusted(
+                                java.security.cert.X509Certificate[] certs, String authType) {
+                        }
+                    }
+            };
+
+// Install the all-trusting trust manager
+            try {
+                SSLContext sc = SSLContext.getInstance("SSL");
+                sc.init(null, trustAllCerts, new java.security.SecureRandom());
+                HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+            } catch (Exception e) {
+            }
+
+            //https://stooq.com/q/l/?s=ads.de&f=sd2t2ohlcv&h&e=csv
+            String urlTemplate ="https://stooq.com/q/l/?s=%s&f=sd2t2ohlcv&h&e=csv";
+            String urlString = String.format(urlTemplate, stockSymbol);
+            URL url = new URL(urlString);
+
+            // Aufbau der Verbindung zur YQL Platform
+            httpsURLConnection = (HttpsURLConnection)url.openConnection();
+
+            InputStream inputStream = httpsURLConnection.getInputStream();
+
+            if (inputStream == null) { // Keinen Aktiendaten-Stream erhalten, daher Abbruch
+                return null;
+            }
+
+            bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+            String line;
+
+            while ((line = bufferedReader.readLine()) != null) {
+                aktiendatenXmlString += line + "\n";
+            }
+            if (aktiendatenXmlString.length() == 0) { // Keine Aktiendaten ausgelesen, Abbruch
+                return null;
+            }
+            Log.v(LOG_TAG, "Aktiendaten XML-String: " + aktiendatenXmlString);
+
+        } catch (IOException e) { // Beim Holen der Daten trat ein Fehler auf, daher Abbruch
+            Log.e(LOG_TAG, "Error ", e);
+            return null;
+        } finally {
+            if (httpsURLConnection != null) {
+                httpsURLConnection.disconnect();
+            }
+            if (bufferedReader != null) {
+                try {
+                    bufferedReader.close();
+                } catch (final IOException e) {
+                    Log.e(LOG_TAG, "Error closing stream", e);
+                }
+            }
+        }
+
+        return aktiendatenXmlString;
+    }
+    private String readStockDataHttp(String stockSymbol){
+        HttpURLConnection httpURLConnection = null;
+        BufferedReader bufferedReader = null;
+
+        String aktiendatenXmlString = "";
+
+        try {
+            //https://stooq.com/q/l/?s=ads.de&f=sd2t2ohlcv&h&e=csv
+            String urlTemplate ="https://stooq.com/q/l/?s=%s&f=sd2t2ohlcv&h&e=csv";
+            URL url = new URL(String.format(urlTemplate, stockSymbol));
+
+            // Aufbau der Verbindung zur YQL Platform
+            httpURLConnection = (HttpURLConnection) url.openConnection();
+
+            InputStream inputStream = httpURLConnection.getInputStream();
+
+            if (inputStream == null) { // Keinen Aktiendaten-Stream erhalten, daher Abbruch
+                return null;
+            }
+            bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+            String line;
+
+            while ((line = bufferedReader.readLine()) != null) {
+                aktiendatenXmlString += line + "\n";
+            }
+            if (aktiendatenXmlString.length() == 0) { // Keine Aktiendaten ausgelesen, Abbruch
+                return null;
+            }
+            Log.v(LOG_TAG, "Aktiendaten XML-String: " + aktiendatenXmlString);
+            publishProgress(1, 1);
+
+
+        } catch (IOException e) { // Beim Holen der Daten trat ein Fehler auf, daher Abbruch
+            Log.e(LOG_TAG, "Error ", e);
+            return null;
+        } finally {
+            if (httpURLConnection != null) {
+                httpURLConnection.disconnect();
+            }
+            if (bufferedReader != null) {
+                try {
+                    bufferedReader.close();
+                } catch (final IOException e) {
+                    Log.e(LOG_TAG, "Error closing stream", e);
+                }
+            }
+        }
+
+        return aktiendatenXmlString;
+    }
+
 }
 
