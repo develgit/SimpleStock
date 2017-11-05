@@ -25,6 +25,8 @@ import java.util.List;
 
 public class StockListFragment extends Fragment{
     private static final String LOG_TAG = StockListFragment.class.getSimpleName();
+
+    private ArrayAdapter<String> stocklisteAdapter;
     public StockListFragment() {
     }
 
@@ -64,7 +66,9 @@ public class StockListFragment extends Fragment{
     }
 
     private void clickOptionItemUpdateAllStock(MenuItem item){
-        Toast.makeText(getActivity(), "Aktualisieren gedrückt!", Toast.LENGTH_LONG).show();
+        FetchStockDataTask fetchStockDataTask = new FetchStockDataTask(getActivity(), stocklisteAdapter);
+        fetchStockDataTask.execute("Fetch Stock");
+        Toast.makeText(getActivity(), "Aktiendaten werden abgefragt!", Toast.LENGTH_LONG).show();
     }
 
     private void registerClickListenerForFloatingAddBtn(View view) {
@@ -98,7 +102,7 @@ public class StockListFragment extends Fragment{
 
         Log.d(LOG_TAG, "Stock: " + stockListe);
 
-        ArrayAdapter<String> stocklisteAdapter =
+        stocklisteAdapter =
                 new ArrayAdapter<>(
                         getActivity(), // Die aktuelle Umgebung (diese Activity)
                         R.layout.stocks_listitem, // ID der XML-Layout Datei
