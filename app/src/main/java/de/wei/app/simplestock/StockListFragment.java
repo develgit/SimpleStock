@@ -1,6 +1,8 @@
 package de.wei.app.simplestock;
 
+import android.app.AlertDialog;
 import android.app.Fragment;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -124,6 +126,42 @@ public class StockListFragment extends Fragment{
                 stockdetailIntent.putExtra(Intent.EXTRA_TEXT, aktienInfo);
                 startActivity(stockdetailIntent);
 
+            }
+        });
+
+        stocklisteListView.setLongClickable(true);
+        stocklisteListView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener(){
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id) {
+                Log.i(LOG_TAG, "onItemLongClick:" + position + ", " + id);
+                final String itemSelected = stocklisteAdapter.getItem(position);
+                Log.i(LOG_TAG, "onItemLongClick: Selected Item: " + itemSelected);
+                AlertDialog.Builder alert = new AlertDialog.Builder(
+                        StockListFragment.this.getActivity());
+                alert.setTitle("Alert!!");
+                alert.setMessage("Are you sure to delete record");
+                alert.setPositiveButton("YES", new DialogInterface.OnClickListener() {
+
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        //do your work here
+                        stocklisteAdapter.remove(itemSelected);
+                        stocklisteAdapter.notifyDataSetChanged();
+                        dialog.dismiss();
+
+                    }
+                });
+                alert.setNegativeButton("NO", new DialogInterface.OnClickListener() {
+
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                        dialog.dismiss();
+                    }
+                });
+
+                alert.show();
+                return true;
             }
         });
     }
