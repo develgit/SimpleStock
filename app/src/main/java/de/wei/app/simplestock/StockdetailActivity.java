@@ -34,10 +34,7 @@ public class StockdetailActivity extends AppCompatActivity {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        if (id == R.id.action_settings) {
-
-            return true;
-        }else if (id == R.id.action_starte_browser_yahoo) {
+        if (id == R.id.action_starte_browser_yahoo) {
             showWebseiteImBrowser(true);
             return true;
         }else if (id == R.id.action_starte_browser_stooq) {
