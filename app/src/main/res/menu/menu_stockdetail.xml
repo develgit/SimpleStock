@@ -11,4 +11,14 @@
         android:orderInCategory="100"
         app:showAsAction="never" />
 
+    <item android:id="@+id/action_starte_browser_stooq"
+        android:title="@string/action_starte_browser_stooq"
+        android:orderInCategory="99"
+        app:showAsAction="never"/>
+
+    <item android:id="@+id/action_starte_browser_yahoo"
+        android:title="@string/action_starte_browser_yahoo"
+        android:orderInCategory="98"
+        app:showAsAction="never"/>
+
 </menu>
