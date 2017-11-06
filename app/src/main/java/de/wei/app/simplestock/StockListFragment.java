@@ -1,6 +1,7 @@
 package de.wei.app.simplestock;
 
 import android.app.Fragment;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -11,6 +12,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -36,7 +38,7 @@ public class StockListFragment extends Fragment{
 
         View view = inflater.inflate(R.layout.fragment_stocklist, container, false);
 
-        registerStockDataAdapter(view);
+        initialStockListView(view);
 
 
         registerClickListenerForFloatingAddBtn(view);
@@ -82,7 +84,7 @@ public class StockListFragment extends Fragment{
         });
     }
 
-    private void registerStockDataAdapter(View view) {
+    private void initialStockListView(View view) {
 
         String [] stockArray = {
                 "Adidas - Kurs: 73,45 €",
@@ -112,6 +114,18 @@ public class StockListFragment extends Fragment{
 
         ListView stocklisteListView = (ListView) view.findViewById(R.id.stocks_listview);
         stocklisteListView.setAdapter(stocklisteAdapter);
+
+        stocklisteListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
+                String aktienInfo = (String) adapterView.getItemAtPosition(position);
+                // Intent erzeugen und Starten der AktiendetailActivity mit explizitem Intent
+                Intent stockdetailIntent = new Intent(getActivity(), StockdetailActivity.class);
+                stockdetailIntent.putExtra(Intent.EXTRA_TEXT, aktienInfo);
+                startActivity(stockdetailIntent);
+
+            }
+        });
     }
 
 }
