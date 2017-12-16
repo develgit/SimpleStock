@@ -30,7 +30,7 @@ import java.util.List;
 public class StockListFragment extends Fragment{
     private static final String LOG_TAG = StockListFragment.class.getSimpleName();
 
-    private ArrayAdapter<String> stocklisteAdapter;
+    private StockAdapter stocklisteAdapter;
     public StockListFragment() {
     }
 
@@ -71,7 +71,7 @@ public class StockListFragment extends Fragment{
 
     private void clickOptionItemUpdateAllStock(MenuItem item){
         FetchStockDataTask fetchStockDataTask = new FetchStockDataTask(getActivity(), stocklisteAdapter);
-        fetchStockDataTask.execute("BMW.de", "DAI.de", "ALV.de", "OSR.de");
+        fetchStockDataTask.execute(stocklisteAdapter.getStocks());
         Toast.makeText(getActivity(), "Aktiendaten werden abgefragt!", Toast.LENGTH_LONG).show();
     }
 
@@ -87,32 +87,10 @@ public class StockListFragment extends Fragment{
     }
 
     private void initialStockListView(View view) {
-
-        String [] stockArray = {
-                "Adidas - Kurs: 73,45 €",
-                "Allianz - Kurs: 145,12 €",
-                "BASF - Kurs: 84,27 €",
-                "Bayer - Kurs: 128,60 €",
-                "Beiersdorf - Kurs: 80,55 €",
-                "BMW St. - Kurs: 104,11 €",
-                "Commerzbank - Kurs: 12,47 €",
-                "Continental - Kurs: 209,94 €",
-                "Continental - Kurs: 209,94 €",
-                "Continental - Kurs: 209,94 €",
-                "Daimler - Kurs: 84,33 €"
-        };
-
-        List<String> stockListe = new ArrayList<>(Arrays.asList(stockArray));
-
-        Log.d(LOG_TAG, "Stock: " + stockListe);
-
-        stocklisteAdapter =
-                new ArrayAdapter<>(
-                        getActivity(), // Die aktuelle Umgebung (diese Activity)
-                        R.layout.stocks_listitem, // ID der XML-Layout Datei
-                        R.id.stocks_listview_textview, // ID des TextViews
-                        stockListe); // Beispieldaten in einer ArrayList
-
+        // Construct the data source
+        List<Stock> arrayOfStocks = Stock.getStocks();
+        // Create the adapter to convert the array to views
+        stocklisteAdapter = new StockAdapter(this.getActivity(), arrayOfStocks);
 
         ListView stocklisteListView = (ListView) view.findViewById(R.id.stocks_listview);
         stocklisteListView.setAdapter(stocklisteAdapter);
@@ -134,8 +112,8 @@ public class StockListFragment extends Fragment{
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id) {
                 Log.i(LOG_TAG, "onItemLongClick:" + position + ", " + id);
-                final String itemSelected = stocklisteAdapter.getItem(position);
-                Log.i(LOG_TAG, "onItemLongClick: Selected Item: " + itemSelected);
+                final Stock itemSelected = stocklisteAdapter.getItem(position);
+                Log.i(LOG_TAG, "onItemLongClick: Selected Item: " + itemSelected.getValues());
                 AlertDialog.Builder alert = new AlertDialog.Builder(
                         StockListFragment.this.getActivity());
                 alert.setTitle("Alert!!");

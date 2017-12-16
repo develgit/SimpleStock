@@ -38,54 +38,63 @@ import javax.xml.parsers.ParserConfigurationException;
  * Created by wei on 05.11.17.
  */
 
-public class FetchStockDataTask extends AsyncTask<String, Integer, String[]> {
+public class FetchStockDataTask extends AsyncTask<Stock, Integer, Long> {
     private final static String LOG_TAG = FetchStockDataTask.class.getSimpleName();
 
-    private ArrayAdapter<String> stocklisteAdapter;
+    private StockAdapter stocklisteAdapter;
     private Activity activity;
+    /*
+    private class DownloadFilesTask extends AsyncTask<URL, Integer, Long> {
+     protected Long doInBackground(URL... urls) {
+         int count = urls.length;
+         long totalSize = 0;
+         for (int i = 0; i < count; i++) {
+             totalSize += Downloader.downloadFile(urls[i]);
+             publishProgress((int) ((i / (float) count) * 100));
+             // Escape early if cancel() is called
+             if (isCancelled()) break;
+         }
+         return totalSize;
+     }
 
-    public FetchStockDataTask(Activity activity, ArrayAdapter<String> stocklisteAdapter) {
+     protected void onProgressUpdate(Integer... progress) {
+         setProgressPercent(progress[0]);
+     }
+
+     protected void onPostExecute(Long result) {
+         showDialog("Downloaded " + result + " bytes");
+     }
+ }
+     */
+
+    public FetchStockDataTask(Activity activity, StockAdapter stocklisteAdapter) {
         this.stocklisteAdapter = stocklisteAdapter;
         this.activity = activity;
     }
 
     @Override
-    protected String[] doInBackground(String... strings) {
+    protected Long doInBackground(Stock... stocks) {
 
-        if (strings.length == 0) { // Keine Eingangsparameter erhalten, daher Abbruch
+        if (stocks.length == 0) { // Keine Eingangsparameter erhalten, daher Abbruch
             return null;
         }
 
         //Key: NHJJ0QINWJPKL86V https://www.alphavantage.co
+        getStocklisteAdapter().clear();
 
-        List<String> stockDatas = new ArrayList<>();
+        //List<Stock> stockDatas = new ArrayList<>();
         int index = 1;
-        for(String stockSymbol: strings){
-            String stockData = readStockDataHttps(stockSymbol);
-            stockDatas.add(stockData);
+        for(Stock stock: stocks){
+            Stock stockData = readStockDataHttps(stock.getSymbol());
+            //stockDatas.add(stockData);
 
-            Log.v(LOG_TAG,"Stock Data:(" + stockSymbol + "):" + stockData);
+            getStocklisteAdapter().add(stockData);
 
-            publishProgress(index++, strings.length);
+            Log.v(LOG_TAG,"Stock Data:(" + stock.getSymbol() + "):" + stockData);
+
+            publishProgress(index++, stocks.length);
         }
-
-        String [] stockArray = {
-                "Adidas - Kurs: 73,45 €",
-                "Allianz - Kurs: 145,12 €",
-                "BASF - Kurs: 84,27 €",
-                "Bayer - Kurs: 128,60 €",
-                "Beiersdorf - Kurs: 80,55 €",
-                "BMW St. - Kurs: 104,11 €",
-                "Commerzbank - Kurs: 12,47 €",
-                "Continental - Kurs: 209,94 €",
-                "Continental - Kurs: 209,94 €",
-                "Continental - Kurs: 209,94 €",
-                "Daimler - Kurs: 84,33 €"
-        };
-        if(stockDatas.isEmpty()){
-            stockDatas.addAll(Arrays.asList(stockArray));
-        }
-        return stockDatas.toArray(new String[stockDatas.size()]);
+        return (long)index;
     }
     @Override
     protected void onProgressUpdate(Integer... values) {
@@ -98,17 +107,17 @@ public class FetchStockDataTask extends AsyncTask<String, Integer, String[]> {
     }
 
     @Override
-    protected void onPostExecute(String[] strings) {
+    protected void onPostExecute(Long result) {
 
         // Wir löschen den Inhalt des ArrayAdapters und fügen den neuen Inhalt ein
         // Der neue Inhalt ist der Rückgabewert von doInBackground(String...) also
         // der StringArray gefüllt mit Beispieldaten
-        if (strings != null) {
+        /*if (stocks != null) {
             getStocklisteAdapter().clear();
-            for (String aktienString : strings) {
-                getStocklisteAdapter().add(aktienString);
+            for (Stock stock : stocks) {
+                getStocklisteAdapter().add(stock);
             }
-        }
+        }*/
 
         // Hintergrundberechnungen sind jetzt beendet, darüber informieren wir den Benutzer
         Toast.makeText(getActivity(), "Aktiendaten vollständig geladen!",
@@ -119,11 +128,11 @@ public class FetchStockDataTask extends AsyncTask<String, Integer, String[]> {
         return activity;
     }
 
-    public ArrayAdapter<String> getStocklisteAdapter() {
+    public StockAdapter getStocklisteAdapter() {
         return stocklisteAdapter;
     }
 
-    private String readStockDataHttps(String stockSymbol){
+    private Stock readStockDataHttps(String stockSymbol){
 
         HttpsURLConnection httpsURLConnection = null;
 
@@ -197,7 +206,7 @@ public class FetchStockDataTask extends AsyncTask<String, Integer, String[]> {
             }
         }
 
-        return aktiendatenXmlString;
+        return Stock.parse(aktiendatenXmlString);
     }
     private String readStockDataHttp(String stockSymbol){
         HttpURLConnection httpURLConnection = null;
